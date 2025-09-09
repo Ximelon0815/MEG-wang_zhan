@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>评估结果</title>
+    <style>
+        body {
+            background-color: #121212;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+            color: rgba(255, 217, 0, 0.8);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 217, 0, 0.3);
+        }
+        
+        h1 {
+            font-size: 2.9em;
+            letter-spacing: 5px;
+            margin: 0 0 10px 0;
+            padding: 20px 0 0 0;
+            font-weight: bold;
+        }
+        
+        .subtitle {
+            font-size: 0.9em;
+            color: rgba(255, 217, 0, 0.6);
+            margin-top: 0;
+            font-style: italic;
+        }
+        
+        .content {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 30px;
+            text-align: center;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 217, 0, 0.2);
+        }
+        
+        .normal-text {
+            font-size: 3em;
+            color: #ff0000;
+            font-weight: bold;
+            margin: 20px 0;
+            text-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+        }
+        
+        .email-input {
+            margin: 30px auto;
+            width: 80%;
+            max-width: 400px;
+        }
+        
+        .submit-btn {
+            margin-top: 15px;
+            padding: 12px 25px;
+            background-color: rgba(255, 217, 0, 0.3);
+            color: rgba(255, 217, 0, 0.9);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1.1em;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .submit-btn:hover {
+            background-color: rgba(255, 217, 0, 0.4);
+            transform: scale(1.05);
+        }
+        
+        .info-text {
+            margin: 15px 0;
+            line-height: 1.6;
+        }
+        
+        .tencent-doc-notice {
+            font-size: 0.8em;
+            color: rgba(255, 217, 0, 0.5);
+            margin-top: 15px;
+        }
+        
+        /* 新增的邮箱输入框样式 */
+        .email-field {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            background-color: rgba(255, 217, 0, 0.1);
+            border: 1px solid rgba(255, 217, 0, 0.3);
+            border-radius: 5px;
+            color: rgba(255, 217, 0, 0.9);
+            font-size: 1em;
+            box-sizing: border-box;
+        }
+        
+        .email-field:focus {
+            outline: none;
+            border-color: rgba(255, 217, 0, 0.6);
+            box-shadow: 0 0 5px rgba(255, 217, 0, 0.3);
+        }
+        
+        /* 新增的页脚样式 */
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px 0;
+            color: rgba(255, 217, 0, 0.6);
+            font-size: 0.9em;
+            border-top: 1px solid rgba(255, 217, 0, 0.2);
+            cursor: pointer;
+        }
+        
+        /* 全屏图片样式 */
+        .fullscreen-image {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            background-image: url('1.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            z-index: 9999;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- 全屏图片元素 -->
+    <div class="fullscreen-image" id="fullscreenImage"></div>
+
+    <div class="header">
+        <h1>评估结果</h1>
+        <p class="subtitle">尖塔第六研究所精神状态评估</p>
+    </div>
+    
+    <div class="content">
+        <div class="info-text">您的心理评估为</div>
+        <div class="normal-text">"正常"</div>
+        
+        <div class="info-text">
+            我们会将您的名字添加到每月最佳员工的候选名单中<br><br>
+            本月最佳员工将获得一张可指定███地区任意城市的旅行车票
+        </div>
+        
+        <div class="email-input">
+            <p>请留下您的个人邮件并在3-5个工作日后查收</p>
+            <form id="emailForm" method="POST">
+                <input type="email" name="email" class="email-field" placeholder="请输入您的邮箱地址" required>
+                <button type="submit" class="submit-btn">提交邮箱</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 页脚 -->
+    <div class="footer" id="footerText">
+        本网站由尖塔第五研究所制作，请确保网站内每一页都包含尖塔研究所图标
+    </div>
+
+<script>
+    document.getElementById('emailForm').addEventListener('submit', function(e) {
+        e.preventDefault(); // 阻止默认提交行为
+        const formData = new FormData(this);
+        
+        fetch('/submit-email', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.text())
+        .then(data => {
+            alert('提交成功！');
+            console.log(data);
+        })
+        .catch(error => {
+            alert('提交失败，请重试');
+            console.error(error);
+        });
+    });
+
+    // 页脚点击事件 - 显示全屏图片2秒后跳转
+    document.getElementById('footerText').addEventListener('click', function() {
+        // 显示全屏图片
+        const fullscreenImage = document.getElementById('fullscreenImage');
+        document.body.style.overflow = 'hidden';
+        fullscreenImage.style.display = 'block';
+        
+        // 2秒后跳转到负分数页
+        setTimeout(() => {
+            window.location.href = "负分数页.html";
+        }, 500);
+    });
+</script>
+</body>
+</html>

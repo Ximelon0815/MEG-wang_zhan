@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>尖塔第六研究所人员心理素质评估</title>
+    <style>
+        body {
+            background-color: #121212;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;           /* 启用 Flex 布局 */
+            flex-direction: column;  /* 垂直排列 */
+            font-family: Arial, sans-serif;
+            color: rgba(255, 217, 0, 0.8);
+            cursor: default;
+        }
+        
+        /* 加载容器 */
+        .loading-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            background-color: #121212;
+        }
+        
+        /* 立方体容器 */
+        .cube-wrapper {
+            position: relative;
+            width: 100%;
+            height: 120px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        /* 旋转立方体 */
+        .rotating-cube {
+            width: 100px;
+            height: 100px;
+            position: relative;
+            transform-style: preserve-3d;
+            animation: rotate 6s infinite linear;
+            transform-origin: center;
+        }
+        
+        /* 压缩动画 */
+        .compressing-cube {
+            animation: compress 1.5s forwards cubic-bezier(0.65, 0, 0.35, 1);
+        }
+        
+        /* 立方体面 */
+        .cube-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 217, 0, 0.6);
+            border: 1px solid rgba(255, 217, 0, 0.9);
+            box-sizing: border-box;
+        }
+        
+        /* 立方体面定位 */
+        .cube-face.front  { transform: translateZ(50px); }
+        .cube-face.back   { transform: rotateY(180deg) translateZ(50px); }
+        .cube-face.right  { transform: rotateY(90deg) translateZ(50px); }
+        .cube-face.left   { transform: rotateY(-90deg) translateZ(50px); }
+        .cube-face.top    { transform: rotateX(90deg) translateZ(50px); }
+        .cube-face.bottom { transform: rotateX(-90deg) translateZ(50px); }
+        
+        /* 加载文本 */
+        .loading-text {
+            font-size: 1.5em;
+            margin-top: 20px;
+            text-align: center;
+            height: 1.5em;
+        }
+        
+        /* 进度条容器 */
+        .progress-container {
+            width: 300px;
+            height: 4px;
+            background-color: rgba(255, 217, 0, 0.2);
+            margin-top: 20px;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        /* 进度条 */
+        .progress-bar {
+            height: 100%;
+            width: 0;
+            background-color: rgba(255, 217, 0, 0.8);
+            transition: width 0.5s linear;
+        }
+        
+        /* 线条容器 */
+        .line-container {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            display: flex;
+            justify-content: center;
+            overflow: hidden;
+            z-index: 2;
+            transform: translateY(-50%);
+        }
+        
+        /* 中心线条 */
+        .center-line {
+            height: 100%;
+            width: 0;
+            background: rgba(255, 217, 0, 0.8);
+            transform-origin: center;
+        }
+        
+        /* 动画定义 */
+        @keyframes rotate {
+            0% { transform: rotateX(0) rotateY(0); }
+            100% { transform: rotateX(360deg) rotateY(360deg); }
+        }
+        
+        @keyframes compress {
+            0% { 
+                transform: scale3d(1, 1, 1) rotateX(0) rotateY(0);
+            }
+            50% {
+                transform: scale3d(1, 0.2, 1) rotateX(0) rotateY(0);
+            }
+            100% { 
+                transform: scale3d(0.01, 0.2, 1) rotateX(0) rotateY(0);
+                opacity: 0;
+            }
+        }
+        
+        @keyframes extendLine {
+            0% { 
+                width: 0;
+                transform: scaleX(0);
+            }
+            100% { 
+                width: 100%;
+                transform: scaleX(1);
+            }
+        }
+        
+        @keyframes fadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 217, 0, 0.3);
+        }
+        
+        h1 {
+            font-size: 2.9em;
+            letter-spacing: 5px;
+            margin: 0 0 10px 0;
+            padding: 20px 0 0 0;
+            font-weight: bold;
+        }
+        
+        .subtitle {
+            font-size: 0.9em;
+            color: rgba(255, 217, 0, 0.6);
+            margin-top: 0;
+            font-style: italic;
+        }
+        
+        .content {
+            width: 100%;           /* 宽度撑满父容器 */
+            max-width: 800px;      /* 限制最大宽度 */
+            text-align: center;    /* 文字居中 */
+            margin: 0 auto;        /* 水平居中 */
+        }
+
+        #startScreen, #quizContainer {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+            transition: all 0.5s;
+        }
+
+        .question {
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto 30px;
+            padding: 25px;
+            border: 1px solid rgba(255, 217, 0, 0.2);
+            border-radius: 5px;
+            background-color: rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        .options {
+            width: 100%;
+            margin: 5px auto 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .option {
+            width: 100%;
+            max-width: 450px;
+            margin: 10px 0;
+            padding: 12px 15px;
+            text-align: center;
+            background-color: rgba(255, 217, 0, 0.1);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .option:hover {
+            background-color: rgba(255, 217, 0, 0.2);
+        }
+        
+        .option.selected {
+            background-color: rgba(255, 217, 0, 0.3);
+            font-weight: bold;
+        }
+        
+        .progress {
+            text-align: center;
+            margin-bottom: 20px;
+            color: rgba(255, 217, 0, 0.6);
+        }
+
+        .start-btn {
+            display: inline-block;
+            margin: 30px auto;
+            padding: 15px 50px;
+            background-color: rgba(255, 217, 0, 0.3);
+            color: rgba(255, 217, 0, 0.9);
+            border: none;
+            border-radius: 5px;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+    
+        .start-btn:hover {
+            background-color: rgba(255, 217, 0, 0.4);
+            transform: scale(1.05);
+        }
+
+        .footer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            text-align: center;
+            line-height: 60px;
+            border-top: 1px solid rgba(255, 217, 0, 0.2);
+            color: rgba(255, 217, 0, 0.6);
+        }
+
+        /* 新增的随机图片样式 */
+        .random-image {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            background-image: url('1.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            z-index: 9998;
+            display: none;
+            cursor: pointer;
+        }
+
+        /* 新增13秒无操作后的样式 */
+            body.inactive-mode {
+            color: #ff0000 !important;
+            transition: color 1s;
+        }
+        
+        .inactive-mode .header h1,
+        .inactive-mode .subtitle,
+        .inactive-mode .info-text,
+        .inactive-mode .question,
+        .inactive-mode .option,
+        .inactive-mode .footer,
+        .inactive-mode .submit-btn {
+            color: #ff0000 !important;
+        }
+    
+        .inactive-mode .header {
+            border-bottom-color: rgba(255, 58, 58, 0.3) !important;
+        }
+    
+        .inactive-mode .footer {
+            border-top-color: rgba(255, 58, 58, 0.3) !important;
+        }
+    
+        .inactive-mode .option {
+            background-color: rgba(255, 50, 50, 0.15) !important;
+            color: #ff0000 !important;
+        }
+    
+        .inactive-mode .option:hover {
+            background-color: rgba(255, 50, 50, 0.25) !important;
+        }
+    
+        .inactive-mode .start-btn {
+            background-color: rgba(255, 50, 50, 0.3) !important;
+            color: #ff0000 !important;
+            border: 1px solid rgba(255, 58, 58, 0.6) !important;
+        }
+    
+        .inactive-mode .start-btn:hover {
+            background-color: rgba(255, 50, 50, 0.4) !important;
+        }
+        
+        /* 负分数页背景图标样式 */
+        .bg-icon {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100px;
+            height: 100px;
+            background-image: url('1.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            opacity: 0;
+            z-index: -1;
+            pointer-events: none;
+        }
+        
+        body.inactive-mode .bg-icon {
+            opacity: 0.2;
+            width: 200px;
+            height: 200px;
+            animation: distort 1.5s infinite ease-in-out;
+        }
+        
+        /* 从负分数页复制的失真动画 */
+        @keyframes distort {
+            0% { 
+                filter: blur(0.5px);
+                clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+            }
+            20% {
+                clip-path: polygon(0 2%, 100% 5%, 98% 95%, 2% 98%);
+            }
+            40% {
+                clip-path: polygon(0 5%, 100% 2%, 98% 98%, 2% 95%);
+                transform: translate(-50%, -50%) translateX(1px);
+            }
+            60% {
+                clip-path: polygon(5% 0, 95% 0, 100% 100%, 0 100%);
+                filter: blur(1px) contrast(1.2);
+            }
+            80% {
+                clip-path: polygon(0 0, 100% 5%, 95% 100%, 5% 95%);
+                transform: translate(-50%, -50%) translateX(-1px);
+            }
+            100% { 
+                filter: blur(0.5px);
+                clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 隐藏图片元素 -->
+    <div id="secretImage"></div>
+    <div id="glitchImage"></div>
+
+    <!-- 新增的随机图片元素 -->
+    <div class="random-image" id="randomImage"></div>
+    
+    <!-- 添加的音频元素 -->
+    <audio id="glitchSound" src="故障.mp3" preload="auto"></audio>
+    <audio id="glitchSound2" src="故障2.mp3" preload="auto"></audio>
+
+    <!-- 新增的背景图标 -->
+    <div class="bg-icon"></div>
+
+    <!-- 主内容 -->
+    <div id="mainContent" style="opacity: 0;">
+
+        <div class="header">
+            <h1>尖塔第六研究所人员心理素质评估</h1>
+            <p class="subtitle">本页面仅供尖塔第六研究所内部人员每月精神状态评估检测使用</p>
+        </div>
+    
+        <div class="content">
+            <div id="startScreen">
+                <h2>研究所月度评估</h2>
+                <p>本评估包含10个问题，将根据您的回答评估您当前的精神状态和工作适应性</p>
+                <p>请确保在安静无干扰的环境下完成评估</p>
+                <button class="start-btn" id="startBtn">开始评估</button>
+            </div>
+        
+            <div id="quizContainer" class="quiz-content">
+                <!-- 问题将通过JavaScript动态加载 -->
+            </div>
+        </div>
+
+        <div class="footer" id="footerText">
+            本网站由尖塔第五研究所制作，请确保网站内每一页都包含尖塔研究所图标
+        </div>
+    </div>
+
+    <!-- 加载动画容器 -->
+    <div class="loading-container" id="loadingContainer">
+        <div class="cube-wrapper">
+            <!-- 线条容器 -->
+            <div class="line-container" id="lineContainer">
+                <div class="center-line" id="centerLine"></div>
+            </div>
+            <!-- 立方体 -->
+            <div class="rotating-cube" id="rotatingCube">
+                <div class="cube-face front"></div>
+                <div class="cube-face back"></div>
+                <div class="cube-face right"></div>
+                <div class="cube-face left"></div>
+                <div class="cube-face top"></div>
+                <div class="cube-face bottom"></div>
+            </div>
+        </div>
+        <div class="loading-text" id="loadingText">正在扫描虹膜</div>
+        <!-- 进度条 -->
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+    </div>
+
+<script>
+    // 页面加载时检查是否显示随机图片
+    window.addEventListener('DOMContentLoaded', function() {
+        // 概率显示随机图片
+        if (Math.random() < 0.01) {
+            const randomImage = document.getElementById('randomImage');
+            randomImage.style.display = 'block';
+            
+            // 点击图片后跳转到指定网址
+            randomImage.addEventListener('click', function() {
+                window.location.href = "https://www.bilibili.com/video/BV1Hr4y1N7Aa?spm_id_from=333.788.recommend_more_video.0&vd_source=46f26f9406db74ecd2747ec4e9f455d8";
+            });
+        }
+    });
+
+    // 加载状态文本
+    const loadingStates = [
+        { text: "正在扫描虹膜", duration: 1500, progress: 20 },
+        { text: "正在验证权限", duration: 1500, progress: 60 },
+        { text: "正在读取对应功能", duration: 3000, progress: 80 }, // 延长到3秒
+        { text: "已验证，欢迎您", duration: 1500, progress: 100 }
+    ];
+        
+    // 获取DOM元素
+    const loadingContainer = document.getElementById('loadingContainer');
+    const loadingText = document.getElementById('loadingText');
+    const rotatingCube = document.getElementById('rotatingCube');
+    const centerLine = document.getElementById('centerLine');
+    const mainContent = document.getElementById('mainContent');
+    const progressBar = document.getElementById('progressBar');
+        
+    // 当前状态索引
+    let currentState = 0;
+        
+    // 更新加载文本和进度条
+    function updateLoadingState() {
+        const state = loadingStates[currentState];
+        loadingText.textContent = state.text;
+            
+        // 更新进度条
+        if (currentState === 2) { // "正在读取对应功能"阶段
+            // 不更新进度条，保持40%
+            progressBar.style.transition = 'none';
+            progressBar.style.width = '60%';
+        } else if (currentState === 3) { // "已验证"阶段
+            // 快速完成进度条
+            progressBar.style.transition = 'width 0.8s linear';
+            progressBar.style.width = '100%';
+        } else {
+            // 正常更新进度条
+            progressBar.style.transition = 'width 1.5s linear';
+            progressBar.style.width = state.progress + '%';
+        }
+            
+        currentState++;
+            
+        if (currentState < loadingStates.length) {
+            setTimeout(updateLoadingState, state.duration);
+        } else {
+            // 最后一个状态完成后开始压缩动画
+            startFinalAnimation();
+        }
+    }
+        
+    // 开始最终动画序列
+    function startFinalAnimation() {
+        // 1. 立方体压缩动画 (1.5秒)
+        rotatingCube.classList.add('compressing-cube');
+            
+        // 2. 压缩动画完成后立即开始线条动画 (1秒)
+        setTimeout(() => {
+            centerLine.style.animation = 'extendLine 1s forwards';
+                
+            // 3. 线条动画完成后淡入主内容
+            setTimeout(() => {
+                mainContent.style.animation = 'fadeIn 0.5s forwards';
+                    
+                // 4. 移除加载容器
+                setTimeout(() => {
+                    loadingContainer.style.display = 'none';
+                }, 500);
+            }, 1000);
+        }, 1500); // 等待压缩动画完成
+    }
+        
+    // 开始加载动画
+    setTimeout(updateLoadingState, 500);
+
+    //页面变化计时器修改
+    let inactivityTimer;
+    let restoreTimer; // 新增：恢复计时器
+    const inactivityDelay = 13000; // 13秒触发变红
+    const restoreDelay = 100;    // 再13秒后恢复
+    window.isInactiveMode = false;
+
+    // 重置所有计时器
+    function resetTimers() {
+        // 清除所有正在运行的计时器
+        clearTimeout(inactivityTimer);
+        clearTimeout(restoreTimer);
+    
+        // 立即恢复初始状态
+        window.isInactiveMode = false;
+        document.body.classList.remove('inactive-mode');
+    
+        // 重新启动无操作检测
+        inactivityTimer = setTimeout(activateInactiveMode, inactivityDelay);
+    }
+
+    // 触发红色警告状态
+    function activateInactiveMode() {
+        window.isInactiveMode = true;
+        document.body.classList.add('inactive-mode');
+    
+        // 新增：13秒后自动恢复（即使不操作）
+        restoreTimer = setTimeout(resetTimers, restoreDelay);
+    }
+
+    // 事件监听（带防抖优化）
+    const debouncedReset = debounce(resetTimers, 300);
+    ['click', 'scroll'].forEach(event => {
+        document.addEventListener(event, debouncedReset, { passive: true });
+    });
+
+    // 防抖函数（避免频繁操作导致不断重置）
+    function debounce(func, delay) {
+        let timeout;
+        return function() {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, arguments), delay);
+        };
+    }
+
+    // 初始化
+    resetTimers();
+
+    // ==================== 开始按钮控制 ====================
+    document.getElementById('startBtn').addEventListener('click', function(e) {
+        // 强制检查红色状态并优先处理
+        if (document.body.classList.contains('inactive-mode')) {
+            window.location.href = "负分数页.html";
+            return false; // 阻止后续执行
+        }
+    
+        // 正常流程
+        document.getElementById('startScreen').style.display = 'none';
+        document.getElementById('quizContainer').style.display = 'block';
+        initQuiz();
+    });
+
+    // 13次点击计数器
+    let clickCounter = 0;
+    const glitchSound = document.getElementById('glitchSound');
+    let isRedModeLocked = false; // 新增锁定状态标记
+
+    document.addEventListener('click', function(e) {
+        if (isRedModeLocked) return; // 如果已锁定，不再响应
+    
+        // 排除特定元素的点击
+        const excludedElements = ['option', 'startBtn', 'cornerBtn', 'footerText'];
+        if (excludedElements.some(id => e.target.closest(`.${id}, #${id}`))) return;
+    
+        clickCounter++;
+    
+        if (clickCounter >= 13) {
+            // 播放音频
+            glitchSound.play().catch(console.error);
+        
+            // 强制切换到红色模式并锁定
+            document.body.classList.add('inactive-mode');
+            isRedModeLocked = true;
+        
+            // 防止其他脚本修改状态（安全防护）
+            Object.defineProperty(document.body.classList, 'remove', {
+                value: function() {
+                    if (arguments[0] === 'inactive-mode') return;
+                    return DOMTokenList.prototype.remove.apply(this, arguments);
+                }
+            });
+        }
+    });
+
+    // 页脚点击事件（简化版，仅跳转）
+    document.getElementById('footerText').addEventListener('click', function() {
+        // 红色状态跳转
+        if (document.body.classList.contains('inactive-mode')) {
+            window.location.href = "https://www.bilibili.com/video/BV1ecuVzaE7f";
+            return;
+        }
+    // 正常状态跳转
+    window.location.href = "https://www.bilibili.com/video/BV1oE411J79z";
+    });
+        
+    const quizData = [
+        // 问题1：使用排列1 [2,1,0,-1,-2]
+        {
+            question: "1. 当实验出现意外结果时，您的第一反应是？",
+            options: [
+                { text: "非常冷静，立即系统分析所有可能性", score: 2 },
+                { text: "有些惊讶，但能快速调整并检查问题", score: 1 },
+                { text: "按标准流程处理，没有特别感受", score: 0 },
+                { text: "感到有些不安，需要同事协助", score: -1 },
+                { text: "非常焦虑，需要暂停工作调整状态", score: -2 }
+            ]
+        },
+        // 问题2：使用排列2 [1,-2,-1,2,0]
+        {
+            question: "2. 面对高强度工作时，您的表现是？",
+            options: [
+                { text: "可以高效工作6-8小时", score: 1 },
+                { text: "难以专注超过3小时", score: -2 },
+                { text: "工作3-4小时后明显疲劳", score: -1 },
+                { text: "能保持极高效率超过8小时", score: 2 },
+                { text: "正常工作4-6小时后效率下降", score: 0 }
+            ]
+        },
+        // 问题3：使用排列3 [-1,2,-2,0,1]
+        {
+            question: "3. 对于研究所的安全规程，您的态度是？",
+            options: [
+                { text: "偶尔会忽略次要规定", score: -1 },
+                { text: "严格遵守并主动完善规程", score: 2 },
+                { text: "认为部分规定过于繁琐", score: -2 },
+                { text: "基本遵守主要规定", score: 0 },
+                { text: "自己严格遵守所有规定", score: 1 }
+            ]
+        },
+        // 问题4：使用排列4 [0,-1,2,1,-2]
+        {
+            question: "4. 您最近一周的睡眠质量如何？",
+            options: [
+                { text: "一般，经常感觉睡眠不足", score: 0 },
+                { text: "较差，难以入睡或易醒", score: -1 },
+                { text: "非常好，每天醒来精神饱满", score: 2 },
+                { text: "较好，偶尔醒来感觉疲倦", score: 1 },
+                { text: "非常差，几乎无法正常睡眠", score: -2 }
+            ]
+        },
+        // 问题5：使用排列5 [-2,0,1,-1,2]
+        {
+            question: "5. 当同事质疑您的工作时，您的反应是？",
+            options: [
+                { text: "情绪激动并产生冲突", score: -2 },
+                { text: "表面接受但内心不悦", score: 0 },
+                { text: "能够听取意见但会坚持己见", score: 1 },
+                { text: "感到被冒犯并回避讨论", score: -1 },
+                { text: "欢迎讨论并理性分析不同观点", score: 2 }
+            ]
+        },
+        // 问题6：使用排列6 [2,-2,0,1,-1]
+        {
+            question: "6. 您对研究所近期变化的适应程度是？",
+            options: [
+                { text: "非常适应，能快速调整工作方式", score: 2 },
+                { text: "完全无法适应，产生抵触", score: -2 },
+                { text: "基本能适应，但效率受影响", score: 0 },
+                { text: "较适应，需要短暂调整期", score: 1 },
+                { text: "较难适应，需要额外帮助", score: -1 }
+            ]
+        },
+        // 问题7：使用排列7 [1,0,-2,-1,2]
+        {
+            question: "7. 您是否曾在工作时产生幻觉或错觉？",
+            options: [
+                { text: "极少数情况下(每月<1次)", score: 1 },
+                { text: "偶尔(每月1-2次)", score: 0 },
+                { text: "频繁(几乎每天)", score: -2 },
+                { text: "经常(每周1-2次)", score: -1 },
+                { text: "从未有过", score: 2 }
+            ]
+        },
+        // 问题8：使用排列8 [-1,2,1,-2,0]
+        {
+            question: "8. 您对红色警报灯的反应速度是？",
+            options: [
+                { text: "反应明显延迟", score: -1 },
+                { text: "立即反应，无需思考", score: 2 },
+                { text: "快速反应，稍有迟疑", score: 1 },
+                { text: "经常忽略或反应过度", score: -2 },
+                { text: "需要1-2秒确认", score: 0 }
+            ]
+        },
+        // 问题9：使用排列9 [0,1,-1,2,-2]
+        {
+            question: "9. 您最近有在做梦吗？",
+            options: [
+                { text: "不清楚", score: 0 },
+                { text: "偶尔", score: 1 },
+                { text: "有时有", score: -1 },
+                { text: "几乎没有", score: 2 },
+                { text: "经常", score: -2 }
+            ]
+        },
+        // 问题10：使用排列10 [-2,-1,2,0,1]
+        {
+            question: "10. 您准备好完成评估了吗？",
+            options: [
+                { text: "完全没有准备好", score: -2 },
+                { text: "不太确定", score: -1 },
+                { text: "是，完全准备好", score: 2 },
+                { text: "不确定", score: 0 },
+                { text: "基本准备好", score: 1 }
+            ]
+        }
+    ];
+
+    // 存储用户答案
+    let userAnswers = new Array(quizData.length);
+        
+    // 初始化测验
+    function initQuiz() {
+        const quizContainer = document.getElementById('quizContainer');
+        quizContainer.innerHTML = '';
+            
+        // 添加进度指示
+        const progress = document.createElement('div');
+        progress.className = 'progress';
+        progress.textContent = `问题 1/${quizData.length}`;
+        quizContainer.appendChild(progress);
+            
+        // 添加第一个问题
+        showQuestion(0);
+    }
+        
+    // 显示指定索引的问题
+    function showQuestion(index) {
+        const quizContainer = document.getElementById('quizContainer');
+        const currentQuestion = quizData[index];
+            
+        // 清除当前问题（保留进度条）
+        const progress = quizContainer.querySelector('.progress');
+        quizContainer.innerHTML = '';
+        quizContainer.appendChild(progress);
+            
+        // 更新进度
+        progress.textContent = `问题 ${index + 1}/${quizData.length}`;
+            
+        // 创建问题容器
+        const questionDiv = document.createElement('div');
+        questionDiv.className = 'question';
+        questionDiv.innerHTML = `<h3>${currentQuestion.question}</h3>`;
+            
+        // 创建选项容器
+        const optionsDiv = document.createElement('div');
+        optionsDiv.className = 'options';
+            
+        // 添加标志变量，防止重复触发
+        let isProcessing = false;
+            
+        // 添加每个选项
+        currentQuestion.options.forEach((option, optionIndex) => {
+            const optionElement = document.createElement('div');
+            optionElement.className = 'option';
+            if (userAnswers[index] === optionIndex) {
+                optionElement.classList.add('selected');
+            }
+            optionElement.textContent = option.text;
+                
+            optionElement.addEventListener('click', () => {
+                if (isProcessing) return;
+                isProcessing = true;
+                    
+                // 保存用户选择
+                userAnswers[index] = optionIndex;
+                    
+                // 更新选项样式
+                optionsDiv.querySelectorAll('.option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                optionElement.classList.add('selected');
+                    
+                // 自动进入下一题或显示结果
+                setTimeout(() => {
+                    if (index < quizData.length - 1) {
+                        showQuestion(index + 1);
+                    } else {
+                        calculateResult();
+                    }
+                    isProcessing = false;
+                }, 300);
+            });
+                
+            optionsDiv.appendChild(optionElement);
+        });
+            
+        questionDiv.appendChild(optionsDiv);
+        quizContainer.appendChild(questionDiv);
+    }
+        
+    // 计算结果并跳转
+    function calculateResult() {
+        // 计算总分
+        let totalScore = 0;
+        userAnswers.forEach((answerIndex, questionIndex) => {
+            totalScore += quizData[questionIndex].options[answerIndex].score;
+        });
+            
+        // 根据分数跳转
+        if (totalScore < 0) {
+        // 分数为负直接跳转
+        window.location.href = "负分数页.html";
+    } else {
+        // 分数非负显示正分数页
+        window.location.href = "正分数页.html";
+    }
+    }
+</script>
+</body>
+</html>
